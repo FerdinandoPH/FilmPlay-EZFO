@@ -1,0 +1,61 @@
+# --- lo que no puede publicarse -----------------------------------------
+# La ROM de GBA Movie Player y todo lo derivado de ella tienen dueno; el
+# repositorio trae el parche, no el material parcheado.
+*.gba
+*.sav
+roms-pruebas/
+GBAMEDIA-eng.zip
+GBAMEDIA-eng*/
+# El conversor original de 2004, descomprimido: sus .exe y .dll son el material
+# del que salio la ingenieria inversa, pero siguen teniendo dueno.
+gbamedia/re_gbamedia/bin/
+
+# Material de prueba: videos y musica con copyright, y lo convertido a partir
+# de ellos.
+videos/
+audios/
+*.avi
+*.mp4
+*.mp3
+*.m4a
+*.gbm
+*.gbs
+*.wav
+ezfode_sd/
+ezfode_sd_prueba/
+
+# --- artefactos ---------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+.venv/
+.venv*/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+gbamedia/bin/ffmpeg*
+gbamedia/bin/ffprobe*
+
+# Compilacion del parche
+ezfo-patch/build/
+ezfo-patch/*.elf
+ezfo-patch/*.bin
+ezfo-patch/*.map
+ezfo-patch/*.sym
+# ezfo-*.ld son generados con sed a partir de ezfo.ld (que si se versiona)
+ezfo-patch/ezfo-*.ld
+
+# --- documentos de trabajo ----------------------------------------------
+# El diario de la ingenieria inversa y los planes son cuaderno de bitacora, no
+# documentacion: se quedan en local. Lo que si se publica son los formatos
+# (re_gbamedia/*_FORMAT.md), que es lo que le sirve a alguien de fuera.
+INFORME_VIABILIDAD.md
+new_filmplay.md
+gbamedia/re_gbamedia/PLAN_CONVERSOR.md
+
+# DEBUG_ON: fichero testigo que crea quien quiere ver los avisos de cadencia
+# (ver gbamedia/src/gbamedia/settings.py). Es una convencion de la propia
+# aplicacion, no de la maquina de quien lo crea.
+DEBUG_ON

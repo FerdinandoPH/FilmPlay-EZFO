@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  push:
+    paths: ["gbamedia/**", ".github/workflows/tests.yml"]
+  pull_request:
+    paths: ["gbamedia/**", ".github/workflows/tests.yml"]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-22.04, windows-latest, macos-14]
+    runs-on: ${{ matrix.so }}
+    defaults:
+      run:
+        working-directory: gbamedia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Qt dependencies (linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-cursor0 libxkbcommon-x11-0
+
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,gui]"
+          python setup.py build_ext --inplace
+      # Si la extension no compila el paquete sigue funcionando, pero en CI
+      # eso es un fallo: hay compilador en las tres plataformas.
+      - name: check the C core is there
+        run: python -c "from gbamedia.core import fast; assert fast.hay_c()"
+      # Las pruebas doradas necesitan los .gbm/.gbs originales, que no estan
+      # en el repositorio: se saltan solas. Lo que si se prueba en las tres
+      # plataformas es el codec entero contra si mismo.
+      - name: tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      # Las lentas recorren ficheros enteros; sin los .gbm originales (que no
+      # estan en el repositorio) se saltan solas, pero las que generan su
+      # propio material si corren.
+      - name: slow tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q -m lento
+      # El nucleo de Python es la implementacion de referencia y tiene que
+      # pasar la misma suite; que las dos den el mismo byte lo comprueba
+      # test_c_core.py.
+      - name: tests with the Python core
+        env:
+          QT_QPA_PLATFORM: offscreen
+          GBAMEDIA_PURO: "1"
+        run: python -m pytest -q

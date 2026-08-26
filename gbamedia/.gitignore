@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.egg-info/
+output/
+packaging/local.env
+ffmpeg
+ffprobe
+ffmpeg.exe
+ffprobe.exe

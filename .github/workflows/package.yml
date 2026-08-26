@@ -1,0 +1,168 @@
+name: package
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/package.yml", "gbamedia/packaging/**", "ezfo-patch/**"]
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Se compila en la imagen mas vieja razonable: el binario de Linux
+          # solo corre en glibc igual o mas nueva que la de la maquina que lo
+          # construyo.
+          - so: ubuntu-22.04
+            nombre: linux-x86_64
+            ffmpeg: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+          - so: windows-latest
+            nombre: windows-x86_64
+            ffmpeg: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z
+          - so: macos-14
+            nombre: macos-arm64
+            ffmpeg: ""
+    runs-on: ${{ matrix.so }}
+    defaults:
+      run:
+        working-directory: gbamedia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Qt 6.5+ carga su plugin xcb con dlopen y necesita libxcb-cursor0. Si
+      # no esta al empaquetar, PyInstaller no lo recoge y el binario de Linux
+      # arranca la CLI pero no abre la ventana.
+      - name: Qt dependencies (linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0
+
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[gui,dist]"
+          python setup.py build_ext --inplace
+      # El nucleo en C es lo que hace que un video de dos minutos tarde
+      # segundos y no minutos. Si no ha compilado, el paquete funcionaria
+      # -en Python- pero no es lo que se quiere publicar.
+      - name: check the C core is there
+        run: python -c "from gbamedia.core import fast; assert fast.hay_c()"
+
+      # El proyecto es GPL, asi que se usan compilaciones GPL de ffmpeg (las
+      # completas). Los dos binarios van dentro del paquete, en bin/.
+      - name: ffmpeg (linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -L "${{ matrix.ffmpeg }}" -o ffmpeg.tar.xz
+          tar xf ffmpeg.tar.xz --strip-components=1 --wildcards '*/ffmpeg' '*/ffprobe'
+          mv ffmpeg ffprobe bin/
+      - name: ffmpeg (windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          curl -L "${{ matrix.ffmpeg }}" -o ffmpeg.7z
+          7z e ffmpeg.7z -obin ffmpeg.exe ffprobe.exe -r
+      - name: ffmpeg (macos)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ffmpeg
+          cp "$(brew --prefix)/bin/ffmpeg" "$(brew --prefix)/bin/ffprobe" bin/
+
+      - name: check before packaging
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+
+      - name: package
+        env:
+          GBAMEDIA_RAIZ: ${{ github.workspace }}/gbamedia
+        run: pyinstaller --noconfirm --clean --distpath dist --workpath build packaging/gbamedia.spec
+
+      - name: check the binary starts
+        shell: bash
+        run: |
+          if [ -f dist/gbamedia/gbamedia.exe ]; then
+            ./dist/gbamedia/gbamedia.exe --help
+          else
+            ./dist/gbamedia/gbamedia --help
+          fi
+
+      - name: AppImage
+        if: runner.os == 'Linux'
+        run: |
+          curl -L -o appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          mkdir -p AppDir/usr/bin
+          cp -r dist/gbamedia/* AppDir/usr/bin/
+          printf '[Desktop Entry]\nType=Application\nName=gbamedia\nExec=gbamedia-gui\nIcon=gbamedia\nCategories=AudioVideo;\n' > AppDir/gbamedia.desktop
+          touch AppDir/gbamedia.png
+          printf '#!/bin/sh\nexec "$(dirname "$0")/usr/bin/gbamedia-gui" "$@"\n' > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          ./appimagetool --appimage-extract-and-run AppDir gbamedia-linux-x86_64.AppImage
+
+      - name: compress
+        shell: bash
+        run: |
+          cd dist && (7z a ../gbamedia-${{ matrix.nombre }}.zip gbamedia \
+            || zip -r ../gbamedia-${{ matrix.nombre }}.zip gbamedia)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gbamedia-${{ matrix.nombre }}
+          path: |
+            gbamedia/gbamedia-${{ matrix.nombre }}.zip
+            gbamedia/gbamedia-linux-x86_64.AppImage
+          if-no-files-found: warn
+
+  # El blob del parche (ezfo.bin/ezfo.sym) es el mismo para cualquier ROM: se
+  # compila una vez aqui, con devkitARM, y se publica ya hecho junto con
+  # patch.py y fixes/. Asi quien solo quiere usar el parche no necesita mas
+  # que Python -devkitARM se queda como cosa de quien vaya a tocar el shim.
+  ezfo-patch:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: build the blob
+        working-directory: ezfo-patch
+        run: make
+      - name: package
+        run: |
+          mkdir -p dist/fixes
+          cp ezfo-patch/patch.py ezfo-patch/ezfo.bin ezfo-patch/ezfo.sym dist/
+          cp ezfo-patch/fixes/*.py dist/fixes/
+          # Importar sin ROM de por medio ya valida que ezfo.sym carga y que
+          # fixes/ se encuentra: es lo unico que se puede probar sin la ROM
+          # real, que no se distribuye.
+          (cd dist && python3 -c "import patch")
+          (cd dist && zip -r ../ezfo-patch.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ezfo-patch
+          path: ezfo-patch.zip
+
+  # Solo con una etiqueta v*: publica los paquetes en una Release de GitHub,
+  # que es de donde los baja quien no quiere compilar nada.
+  release:
+    needs: [package, ezfo-patch]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*/*
+          fail_on_unmatched_files: true

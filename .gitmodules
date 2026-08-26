@@ -1,0 +1,6 @@
+[submodule "ezfo-patch/gba-flashcartio"]
+	path = ezfo-patch/gba-flashcartio
+	url = https://github.com/afska/gba-flashcartio.git
+[submodule "sdcard"]
+	path = sdcard
+	url = https://github.com/FerdinandoPH/EZFO-sdcard-emu.git

@@ -1,0 +1,12 @@
+altgraph==0.17.5
+iniconfig==2.3.0
+numpy==2.5.2
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+pyinstaller==6.22.2
+pyinstaller-hooks-contrib==2026.6
+PySide6_Essentials==6.11.2
+pytest==9.1.1
+setuptools==84.0.0
+shiboken6==6.11.2
