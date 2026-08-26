@@ -166,3 +166,10 @@ jobs:
         with:
           files: artifacts/*/*
           fail_on_unmatched_files: true
+          body: |
+            **Only tested on an EZ Flash Omega DE.** It should work the same
+            on a plain EZ Flash Omega, but that hasn't been verified yet.
+
+            **Solo probado en una EZ Flash Omega DE.** En teoría debería
+            funcionar igual en una EZ Flash Omega normal, pero eso todavía
+            no se ha comprobado.
