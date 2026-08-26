@@ -30,7 +30,9 @@ jobs:
 
       - name: install
         run: |
-          python -m pip install --upgrade pip
+          # setuptools explicito: pip lo aisla dentro de su build efimero al
+          # instalar, y python setup.py de aqui abajo lo necesita importable.
+          python -m pip install --upgrade pip setuptools
           pip install -e ".[dev,gui]"
           python setup.py build_ext --inplace
       # Si la extension no compila el paquete sigue funcionando, pero en CI
