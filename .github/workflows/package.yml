@@ -49,7 +49,7 @@ jobs:
           # setuptools explicito: pip lo aisla dentro de su build efimero al
           # instalar, y python setup.py de aqui abajo lo necesita importable.
           python -m pip install --upgrade pip setuptools
-          pip install -e ".[gui,dist]"
+          pip install -e ".[gui,dist,dev]"
           python setup.py build_ext --inplace
       # El nucleo en C es lo que hace que un video de dos minutos tarde
       # segundos y no minutos. Si no ha compilado, el paquete funcionaria
