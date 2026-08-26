@@ -9,6 +9,11 @@ from pathlib import Path
 
 import pytest
 
+# Las pruebas comparan contra los msgid, que son las cadenas en espanol: sin
+# esto, en una maquina con locale en ingles (como los runners de CI) sale
+# ingles y las que comparan texto fallan sin que el codigo este mal.
+os.environ.setdefault("GBAMEDIA_IDIOMA", "es")
+
 _DEFECTO = Path(__file__).resolve().parents[2] / "ezfode_sd" / "MEDIA"
 
 
