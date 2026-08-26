@@ -79,8 +79,11 @@ exe_gui = EXE(
 COLLECT(
     exe_cli, a_cli.binaries, a_cli.datas,
     exe_gui, a_gui.binaries, a_gui.datas,
-    # En Windows quitar simbolos rompe mas de lo que ahorra.
-    strip=os.name != "nt",
+    # Sin quitar simbolos: `strip` rompe la OpenBLAS que trae numpy -deja sus
+    # segmentos sin alinear a pagina y el binario no arranca-, y lo que ahorra
+    # no compensa. Se noto en Linux, donde el paquete construia pero
+    # `gbamedia --help` moria al importar numpy.
+    strip=False,
     upx=False,
     name="gbamedia",
 )
