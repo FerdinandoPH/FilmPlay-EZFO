@@ -146,9 +146,9 @@ def test_sin_seleccion_se_edita_el_lote(ventana, fuentes):
     assert not ventana.lote.filas[0].propias
 
 
-def test_con_seleccion_se_editan_solo_esos(ventana, fuentes, re_gbamedia):
+def test_con_seleccion_se_editan_solo_esos(ventana, fuentes, wav_prueba):
     _anade(ventana, [fuentes / "Audio Video Sync Test_360p.mp4",
-                     re_gbamedia / "windows.wav"])
+                     wav_prueba])
     assert len(ventana.lote.filas) == 2
     _marca(ventana, 0)
     ventana._al_cambiar_campo("preset", "compresion")
@@ -162,9 +162,9 @@ def test_con_seleccion_se_editan_solo_esos(ventana, fuentes, re_gbamedia):
     assert not ventana.lote.filas[0].propias
 
 
-def test_el_panel_marca_lo_que_no_coincide(ventana, fuentes, re_gbamedia):
+def test_el_panel_marca_lo_que_no_coincide(ventana, fuentes, wav_prueba):
     _anade(ventana, [fuentes / "Audio Video Sync Test_360p.mp4",
-                     re_gbamedia / "windows.wav"])
+                     wav_prueba])
     ventana.lote.filas[0].poner("brillo", 50)
     ventana.lista.selectAll()
     ventana._refrescar_panel()

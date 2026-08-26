@@ -5,6 +5,7 @@ de Windows XP. No se copian al repositorio: se apunta a ellos con
 GBAMEDIA_ORIGINALES, y si no estan las pruebas se saltan en vez de fallar.
 """
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -43,9 +44,22 @@ def hay_ffmpeg():
 
 
 @pytest.fixture(scope="session")
-def re_gbamedia() -> Path:
-    """Los ficheros de re_gbamedia/, dentro del propio paquete."""
-    return Path(__file__).resolve().parents[1] / "re_gbamedia"
+def wav_prueba(hay_ffmpeg, tmp_path_factory) -> Path:
+    """Un .wav suelto, para las pruebas de convertir musica.
+
+    Se sintetiza con ffmpeg en vez de traer un fichero al repositorio: lo que
+    prueban es que un audio cualquiera se convierte, no un audio concreto, y
+    asi no hace falta material con dueno ni que nadie se traiga nada aparte.
+    """
+    from gbamedia.media import ffmpeg
+
+    destino = tmp_path_factory.mktemp("audio") / "prueba.wav"
+    subprocess.run(
+        [str(ffmpeg.ruta("ffmpeg")), "-v", "error", "-y", "-f", "lavfi",
+         "-i", "sine=frequency=440:duration=6:sample_rate=22050",
+         "-ac", "2", "-c:a", "pcm_s16le", str(destino)],
+        check=True, capture_output=True)
+    return destino
 
 
 @pytest.fixture(scope="session")

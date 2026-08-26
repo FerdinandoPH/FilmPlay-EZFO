@@ -110,19 +110,19 @@ def test_convertir_un_video(hay_ffmpeg, fuentes, tmp_path):
     assert not resultado.avisos
 
 
-def test_convertir_musica_suelta(hay_ffmpeg, re_gbamedia, tmp_path):
+def test_convertir_musica_suelta(hay_ffmpeg, wav_prueba, tmp_path):
     destinos = Destinos(tmp_path / "videos", tmp_path)
-    wav = re_gbamedia / "windows.wav"
+    wav = wav_prueba
     resultado = convertir(Trabajo(wav, Opciones(modo_audio=4)), destinos)
-    assert [f.name for f in resultado.ficheros] == ["windows.gbs"]
+    assert [f.name for f in resultado.ficheros] == ["prueba.gbs"]
     assert resultado.frames == 0
     assert "64:1 Mono" in verificar(resultado.ficheros[0])
 
 
-def test_rellenar_cluster(hay_ffmpeg, re_gbamedia, tmp_path):
+def test_rellenar_cluster(hay_ffmpeg, wav_prueba, tmp_path):
     """La ROM sin parchear lee hasta el final de la cadena FAT."""
     destinos = Destinos(tmp_path / "videos", tmp_path)
-    wav = re_gbamedia / "windows.wav"
+    wav = wav_prueba
     resultado = convertir(
         Trabajo(wav, Opciones(rellenar_cluster=32768)), destinos)
     assert resultado.ficheros[0].stat().st_size % 32768 == 0

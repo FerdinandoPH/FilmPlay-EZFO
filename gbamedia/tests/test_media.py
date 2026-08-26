@@ -151,8 +151,8 @@ def test_sondeo(hay_ffmpeg, fuentes):
     assert info.frames_destino == 631
 
 
-def test_un_wav_no_es_video(hay_ffmpeg, re_gbamedia):
-    info = probe.sondear(re_gbamedia / "windows.wav")
+def test_un_wav_no_es_video(hay_ffmpeg, wav_prueba):
+    info = probe.sondear(wav_prueba)
     assert not info.es_video and info.tiene_audio
 
 
