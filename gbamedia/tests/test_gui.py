@@ -109,6 +109,21 @@ def test_no_se_anade_dos_veces_el_mismo_fichero():
     assert len(lote.filas) == 1
 
 
+def test_una_fila_sin_sondear_se_clasifica_por_la_extension():
+    """Mientras ffprobe contesta, la lista ya la ensena como lo que parece."""
+    lote = Lote()
+    video = lote.anadir("a.mp4")
+    musica = lote.anadir("b.mp3")
+    assert video.info is None and video.es_video
+    assert not musica.es_video
+    assert video.opciones.modo_audio == lote.perfil_video.modo_audio
+
+    # y el sondeo sigue teniendo la ultima palabra
+    video.info = _InfoFalsa(False)
+    lote.encuadrar(video)
+    assert not video.es_video
+
+
 def test_la_etiqueta_avisa_de_los_ajustes_propios():
     fila = Fila("a.mp4", Opciones())
     assert fila.etiqueta() == ""

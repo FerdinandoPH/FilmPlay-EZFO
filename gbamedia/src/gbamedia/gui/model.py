@@ -13,6 +13,7 @@ from ..settings import modo_depuracion
 from ..i18n import _
 from ..jobs.convert import Trabajo
 from ..jobs.options import Opciones
+from ..media.probe import parece_video
 
 CAMPOS = tuple(f.name for f in fields(Opciones))
 
@@ -43,7 +44,15 @@ class Fila:
 
     @property
     def es_video(self) -> bool:
-        return bool(self.info and self.info.es_video)
+        """Si todavia no ha contestado ffprobe, se cree a la extension.
+
+        Mientras se sondea la fila ya esta en la lista, y darla por musica
+        hasta saberlo hacia que un video se ensenase como "musica" durante
+        toda la lectura. `sondear` sigue teniendo la ultima palabra.
+        """
+        if self.info is None:
+            return parece_video(self.origen)
+        return bool(self.info.es_video)
 
     @property
     def parte(self) -> float:
@@ -111,7 +120,8 @@ class Lote:
         origen = Path(origen)
         if any(f.origen == origen for f in self.filas):
             return None
-        fila = Fila(origen, self.perfil_musica)
+        fila = Fila(origen, self.perfil_video if parece_video(origen)
+                    else self.perfil_musica)
         self.filas.append(fila)
         return fila
 
